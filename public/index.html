@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>JSMPEG Viewer</title>
+<script src="https://cctv-tensorflow.my.id/js/jsmpeg.min.js"></script>
+<style>
+  body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
+  #videoCanvas, #overlayCanvas { max-width: 100%; max-height: 100%; }
+  #overlayCanvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+  <canvas id="videoCanvas"></canvas>
+  <canvas id="overlayCanvas"></canvas>
+
+  <script>
+    const videoWs = new WebSocket("ws://localhost:3000/video");
+    const videoCanvas = document.getElementById("videoCanvas");
+    const overlayCanvas = document.getElementById("overlayCanvas");
+    const overlayCtx = overlayCanvas.getContext("2d");
+
+    // Set ukuran overlay sama dengan video canvas
+    function resizeCanvas() {
+      overlayCanvas.width = videoCanvas.width;
+      overlayCanvas.height = videoCanvas.height;
+    }
+    resizeCanvas();
+
+    // Player JSMPEG
+    const player = new JSMpeg(videoWs, { canvas: videoCanvas });
+
+    // Data deteksi terakhir
+    let lastDetections = [];
+
+    // Terima hasil deteksi
+    const wsDetect = new WebSocket("ws://localhost:3000/detect");
+    wsDetect.onmessage = (msg) => {
+      lastDetections = JSON.parse(msg.data);
+    };
+
+    // Render bounding box
+    function drawDetections() {
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      overlayCtx.strokeStyle = "red";
+      overlayCtx.lineWidth = 2;
+      overlayCtx.font = "18px Arial";
+      overlayCtx.fillStyle = "red";
+
+      for (const det of lastDetections) {
+        const { x1, y1, x2, y2, score, class_name } = det;
+        overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        overlayCtx.fillText(class_name + " " + (score * 100).toFixed(1) + "%", x1, y1 - 4);
+      }
+
+      requestAnimationFrame(drawDetections);
+    }
+
+    drawDetections();
+    window.addEventListener("resize", resizeCanvas);
+  </script>
+</body>
+</html>
