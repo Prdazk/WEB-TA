@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>CCTV HLS Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- hls.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1000px;
+      background: #111827;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+      color: #facc15; /* kuning cerah */
+      text-shadow: 0 2px 5px rgba(0,0,0,0.7);
+    }
+
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: black;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      outline: none;
+    }
+
+    /* Hilangkan kontrol video default */
+    video::-internal-media-controls {
+      display: none;
+    }
+    video::-webkit-media-controls {
+      display: none !important;
+    }
+    video::-moz-media-controls {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="title">LIVE CCTV – Helmet Detection</div>
+    <video id="video" autoplay muted playsinline></video>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const hlsUrl = 'http://localhost:3000/hls/helmet_pnm/output.m3u8';
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        lowLatencyMode: true,
+        maxLiveSyncPlaybackRate: 1.5
+      });
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play();
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = hlsUrl;
+      video.play();
+    } else {
+      alert('Browser tidak mendukung HLS');
+    }
+  </script>
+
+</body>
+</html>

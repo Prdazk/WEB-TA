@@ -25,4 +25,3 @@ app.listen(3000, () => {
   console.log(`Server running: http://localhost:3000/hls/output.m3u8`);
 });
 }
-
