@@ -17,6 +17,8 @@ class VideoCaptureAsync:
         self.cap = cv2.VideoCapture(src)
         if not self.cap.isOpened():
             raise ValueError(f"Cannot open video stream: {src}")
+
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self.ret, self.frame = self._safe_read()
         self.running = True
         Thread(target=self.update, daemon=True).start()
@@ -60,21 +62,31 @@ try:
 except FileNotFoundError:
     class_list = ["person", "bicycle", "car", "motorcycle", "helmet"]
 
-video_url = "http://localhost:3000/hls/output.m3u8"
-cap = VideoCaptureAsync(video_url)
+# ================== VIDEO URLS ==================
+video_urls = [
+    "http://localhost:3000/hls/output1.m3u8",
+    "http://localhost:3000/hls/output2.m3u8"
+]
+
+caps = [VideoCaptureAsync(url) for url in video_urls]
 
 # ================== CONFIG ==================
-small_width, small_height = 960, 520
+small_width, small_height = 640, 360
 frame_skip = 3
 count = 0
-scale_box = 0.85
+scale_box = 0.84
 
 GREEN_TIME, YELLOW_TIME, RED_TIME = 90, 5, 60
 TOTAL_TIME = GREEN_TIME + YELLOW_TIME + RED_TIME
 start_time = time.time()
 
-stop_line_thickness = 3
-stop_area_points = np.array([[200,210],[590,320],[572,370],[165,245]], np.int32).reshape((-1,1,2))
+stop_line_thickness = 2
+stop_area_points = np.array([
+    [int(200 * small_width / 960), int(210 * small_height / 520)],
+    [int(590 * small_width / 960), int(320 * small_height / 520)],
+    [int(572 * small_width / 960), int(370 * small_height / 520)],
+    [int(165 * small_width / 960), int(245 * small_height / 520)]
+], np.int32).reshape((-1, 1, 2))
 
 # ================== FLASK APP ==================
 app = Flask(__name__, static_folder='public', static_url_path='')
@@ -88,21 +100,27 @@ class YOLOThread:
         Thread(target=self.run, daemon=True).start()
 
     def run(self):
-        global cap
         while True:
             if self.frame is not None:
                 with self.lock:
                     try:
-                        self.results = model(self.frame, verbose=False, device="CPU")
+                        self.results = model(
+                            self.frame,
+                            verbose=False,
+                            device="CPU"
+                        )
                     except Exception:
                         self.results = None
-            time.sleep(0.01)
+            time.sleep(0.02)
 
-yolo_thread = YOLOThread()
+yolo_threads = [YOLOThread() for _ in video_urls]
 
 # ================== GENERATE VIDEO FRAMES ==================
-def generate_frames():
-    global count, yolo_thread
+def generate_frames(index):
+    global count
+    cap = caps[index]
+    yolo_thread = yolo_threads[index]
+
     while True:
         ret, frame = cap.read()
         if not ret or frame is None:
@@ -118,19 +136,19 @@ def generate_frames():
 
         with yolo_thread.lock:
             results = yolo_thread.results
+
         if results is None:
-            time.sleep(0.01)
             continue
 
         motors, helmets = [], []
 
         elapsed = int((time.time() - start_time) % TOTAL_TIME)
         if elapsed < GREEN_TIME:
-            stop_line_color, light_text = (0,255,0), "GREEN - GO"
+            light_color, light_text = (0, 255, 0), "Hijau - GO"
         elif elapsed < GREEN_TIME + YELLOW_TIME:
-            stop_line_color, light_text = (0,255,255), "YELLOW - READY"
+            light_color, light_text = (0, 255, 255), "Kuning - SIAP"
         else:
-            stop_line_color, light_text = (0,0,255), "RED - STOP"
+            light_color, light_text = (0, 0, 255), "Merah - BERHENTI"
 
         for r in results:
             boxes = r.boxes.xyxy.cpu().numpy()
@@ -139,55 +157,55 @@ def generate_frames():
 
             for (x1, y1, x2, y2), cls, conf in zip(boxes, cls_ids, confs):
                 x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-                cls = int(cls)
-                label_name = class_list[cls] if cls < len(class_list) else str(cls)
+                label_name = class_list[int(cls)]
 
                 if label_name == "helmet":
                     helmets.append((x1, y1, x2, y2))
                 else:
                     motors.append((x1, y1, x2, y2))
 
-                w, h = x2 - x1, y2 - y1
-                x1_adj = int(x1 + (1-scale_box)/2 * w)
-                y1_adj = int(y1 + (1-scale_box)/2 * h)
-                x2_adj = int(x2 - (1-scale_box)/2 * w)
-                y2_adj = int(y2 - (1-scale_box)/2 * h)
+                color = (0, 255, 0) if label_name == "helmet" else (0, 0, 255)
+                cv2.rectangle(frame_small, (x1, y1), (x2, y2), color, 2)
+                cvzone.putTextRect(
+                    frame_small,
+                    f'{label_name} {conf:.2f}',
+                    (x1, y1),
+                    scale=0.5,
+                    thickness=1,
+                    colorR=color
+                )
 
-                color = (0,255,0) if label_name=="helmet" else (0,0,255)
-                cv2.rectangle(frame_small, (x1_adj, y1_adj), (x2_adj, y2_adj), color, 2)
-                cvzone.putTextRect(frame_small, f'{label_name} {conf:.2f}', (x1_adj, y1_adj),
-                                   scale=0.6, thickness=1, colorR=color)
+        # ================= STOP LINE HANYA UNTUK VIDEO PERTAMA ==================
+        if index == 0:
+            cv2.polylines(frame_small, [stop_area_points], True, light_color, stop_line_thickness)
+            cv2.putText(
+                frame_small,
+                light_text,
+                (stop_area_points[0][0][0], stop_area_points[0][0][1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                light_color,
+                2
+            )
 
-        for mx1,my1,mx2,my2 in motors:
-            has_helmet = any(iou((mx1,my1,mx2,my2), h)>0.1 for h in helmets)
-            w, h = mx2 - mx1, my2 - my1
-            mx1_adj = int(mx1 + (1-scale_box)/2 * w)
-            my1_adj = int(my1 + (1-scale_box)/2 * h)
-            mx2_adj = int(mx2 - (1-scale_box)/2 * w)
-            my2_adj = int(my2 - (1-scale_box)/2 * h)
-            color = (0,255,0) if has_helmet else (0,0,255)
-            label_text = "Helmet" if has_helmet else "No Helmet"
-            cv2.rectangle(frame_small, (mx1_adj,my1_adj), (mx2_adj,my2_adj), color, 2)
-            cv2.putText(frame_small, label_text, (mx1_adj,my1_adj-5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-        cv2.polylines(frame_small, [stop_area_points], True, stop_line_color, stop_line_thickness)
-        cv2.putText(frame_small, light_text, (stop_area_points[0][0][0], stop_area_points[0][0][1]-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, stop_line_color, 2)
-
-        ret, buffer = cv2.imencode('.jpg', frame_small)
+        ret, buffer = cv2.imencode('.jpg', frame_small, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
 # ================== FLASK ROUTES ==================
 @app.route('/')
 def index():
-    # Kirimkan file index.html dari folder public
     return send_from_directory('public', 'index.html')
 
-@app.route('/video')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+@app.route('/video1')
+def video1_feed():
+    return Response(generate_frames(0),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/video2')
+def video2_feed():
+    return Response(generate_frames(1),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=3000, threaded=True)
