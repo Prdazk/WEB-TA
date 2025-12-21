@@ -2,294 +2,234 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Web Monitoring Tajam</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Web Monitoring</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body, html { height: 100%; font-family: 'Roboto', sans-serif; background: #111; color: #fff; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  height:100%;
+  font-family:'Roboto',sans-serif;
+  background:#0b0e14;
+  color:#eaeaea;
+}
+#dashboard{display:flex;height:100vh;overflow:hidden}
 
-  /* Dashboard Layout */
-  #dashboard { display: flex; height: 100vh; overflow: hidden; }
+/* ===== SIDEBAR ===== */
+#sidebar{
+  width:260px;
+  background:linear-gradient(180deg,#050608,#0c101a);
+  padding:40px 20px;
+  border-right:2px solid #f5c542;
+}
+#sidebar h2{
+  font-family:'Orbitron',sans-serif;
+  font-size:1.9em;
+  text-align:center;
+  color:#f5c542;
+  margin-bottom:40px;
+}
+#sidebar ul{list-style:none}
+#sidebar li{
+  padding:14px 18px;
+  margin-bottom:14px;
+  background:#141826;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:600;
+  transition:.25s;
+}
+#sidebar li i{margin-right:10px;color:#f5c542}
+#sidebar li:hover{background:#f5c542;color:#000}
+#sidebar li:hover i{color:#000}
 
-  /* Sidebar */
-  #sidebar {
-    width: 260px;
-    background-color: #000;
-    padding: 40px 20px;
-    display: flex;
-    flex-direction: column;
-    border-right: 3px solid #00ff00;
-  }
-  #sidebar h2 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2em;
-    margin-bottom: 50px;
-    text-align: center;
-    color: #ffff00;
-  }
-  #sidebar ul { list-style: none; padding: 0; }
-  #sidebar ul li {
-    margin-bottom: 20px;
-    cursor: pointer;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1.1em;
-    display: flex;
-    align-items: center;
-    color: #fff;
-    background-color: #222;
-    transition: all 0.2s ease;
-  }
-  #sidebar ul li:hover {
-    background-color: #00ff00;
-    color: #000;
-    transform: translateX(4px);
-  }
-  #sidebar ul li i { margin-right: 12px; }
+/* ===== MAIN ===== */
+#main-content{
+  flex:1;
+  padding:30px;
+  background:radial-gradient(circle at top,#151a2b,#0b0e14);
+  overflow:auto;
+}
+.section{display:none;flex-direction:column;align-items:center}
+.section.active{display:flex}
 
-  /* Main Content */
-  #main-content {
-    flex: 1;
-    background-color: #1b1b1b;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    overflow: auto;
-    padding: 25px;
-  }
-  .section { width: 100%; margin-bottom: 30px; display: flex; justify-content: center; flex-direction: column; align-items: center; }
+.section-title{
+  font-family:'Orbitron',sans-serif;
+  color:#f5c542;
+  font-size:1.6em;
+  margin-bottom:28px;
+}
 
-  /* Video Container */
-  .video-row {
-    display: flex;
-    gap: 20px; /* jarak antar video */
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .video-container {
-    position: relative;
-    background: #000;
-    border-radius: 15px;
-    overflow: hidden;
-    border: 3px solid #ff0000;
-    flex: 1 1 45%; /* 2 video berdampingan */
-    max-width: 600px;
-  }
-  .video-container img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 15px;
-  }
-  .video-container canvas {
-    position: absolute;
-    top:0; left:0;
-    pointer-events: none;
-  }
+/* ===== VIDEO ===== */
+.video-row{
+  display:flex;
+  gap:28px;
+  margin-bottom:30px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.video-container{
+  position:relative;
+  border-radius:18px;
+  overflow:hidden;
+  background:#000;
+  flex:1 1 45%;
+  max-width:600px;
+  border:2px solid #00e5ff;
+  box-shadow:0 0 20px rgba(0,229,255,.15);
+}
+.video-container img{width:100%;display:block}
+.badge-live{
+  position:absolute;
+  top:12px;left:12px;
+  background:#e53935;
+  color:#fff;
+  padding:4px 12px;
+  border-radius:20px;
+  font-size:.75em;
+  font-weight:700;
+}
 
-  /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #333;
-    border-radius: 10px;
-  }
-  table th, table td { padding: 12px 15px; text-align: center; }
-  table th { background-color: #ff9900; color: #000; font-weight: 700; }
-  table tr:nth-child(even) { background-color: #222; }
-  table tr:hover { background-color: #555; }
-  table img { border-radius: 5px; }
+/* ===== TABLE ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#121726;
+  border-radius:14px;
+  overflow:hidden;
+}
+th,td{padding:14px;text-align:center;font-size:.9em}
+th{background:#f5c542;color:#000;font-weight:700}
+tr:nth-child(even){background:#0e1320}
+tr:hover{background:#1a2035}
 
-  /* Charts */
-  .chart-container {
-    width: 100%;
-    max-width: 900px;
-    background-color: #222;
-    padding: 20px;
-    border-radius: 15px;
-  }
+/* ===== CHART ===== */
+.chart-container{
+  width:100%;
+  max-width:900px;
+  background:#121726;
+  padding:26px;
+  border-radius:18px;
+  border:2px solid #00e5ff;
+  box-shadow:0 0 18px rgba(0,229,255,.15);
+}
 
-  /* Section Titles */
-  .section-title {
-    color: #00ff00;
-    font-weight: 700;
-    font-size: 1.4em;
-    margin-bottom: 20px;
-    font-family: 'Orbitron', sans-serif;
-  }
-
-  /* Responsive */
-  @media(max-width: 1024px){ .chart-container { width: 95%; } }
-  @media(max-width: 768px){
-    #sidebar { width: 200px; padding: 25px; }
-    #sidebar h2 { font-size: 1.7em; margin-bottom: 35px; }
-    #sidebar ul li { font-size: 1em; }
-    .chart-container { width: 100%; }
-    .video-container { flex: 1 1 100%; max-width: 100%; }
-  }
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  #sidebar{width:200px}
+  .video-container{flex:1 1 100%}
+}
 </style>
 </head>
+
 <body>
-
 <div id="dashboard">
-  <aside id="sidebar">
-    <h2>Monitoring</h2>
-    <ul>
-      <li onclick="showSection('beranda')"><i class="fa-solid fa-house"></i> Beranda</li>
-      <li onclick="showSection('data')"><i class="fa-solid fa-video"></i> Data Pelanggaran</li>
-      <li onclick="showSection('history')"><i class="fa-solid fa-clock-rotate-left"></i> History</li>
-      <li onclick="showSection('status')"><i class="fa-solid fa-chart-line"></i> Status Kepadatan</li>
-    </ul>
-  </aside>
 
-  <main id="main-content">
-    <!-- Beranda -->
-    <div id="beranda" class="section">
-      <div class="section-title">CCTV Live Streaming</div>
-      <div class="video-row">
-        <div class="video-container">
-          <img id="videoStream1" src="/video1" alt="Live Video Feed 1">
-          <canvas id="overlayCanvas1"></canvas>
-        </div>
-        <div class="video-container">
-          <img id="videoStream2" src="/video2" alt="Live Video Feed 2">
-          <canvas id="overlayCanvas2"></canvas>
-        </div>
-      </div>
-    </div>
+<aside id="sidebar">
+  <h2>Monitoring Tugas Akhir</h2>
+  <ul>
+    <li onclick="show('beranda')"><i class="fa-solid fa-video"></i>Live CCTV</li>
+    <li onclick="show('data')"><i class="fa-solid fa-table"></i>Data Pelanggaran</li>
+    <li onclick="show('history')"><i class="fa-solid fa-chart-line"></i>Statistik</li>
+    <li onclick="show('status')"><i class="fa-solid fa-road"></i>Kepadatan</li>
+  </ul>
+</aside>
 
-    <!-- Data Pelanggaran -->
-    <div id="data" class="section" style="display:none;">
-      <div class="section-title">Data Pelanggaran</div>
-      <table>
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>ID</th>
-            <th>Tanggal</th>
-            <th>Waktu</th>
-            <th>Jenis Pelanggaran</th>
-            <th>Lokasi</th>
-            <th>Foto Bukti</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>351</td>
-            <td>18/12/2025</td>
-            <td>20:30</td>
-            <td>Tidak pakai helm</td>
-            <td>Jalan Sudirman</td>
-            <td><img src="bukti1.jpg" alt="Bukti" width="90"></td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>352</td>
-            <td>18/12/2025</td>
-            <td>21:00</td>
-            <td>Lampu Merah</td>
-            <td>Jalan Gatot Subroto</td>
-            <td><img src="bukti2.jpg" alt="Bukti" width="90"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+<main id="main-content">
 
-    <!-- History -->
-    <div id="history" class="section" style="display:none;">
-      <div class="section-title">History Pelanggaran</div>
-      <div class="chart-container">
-        <canvas id="historyChart"></canvas>
-      </div>
-    </div>
+<!-- LIVE CCTV -->
+<div id="beranda" class="section active">
+  <div class="section-title">Live CCTV TA</div>
 
-    <!-- Status Kepadatan -->
-    <div id="status" class="section" style="display:none;">
-      <div class="section-title">Status Kepadatan</div>
-      <div class="chart-container">
-        <canvas id="statusChart"></canvas>
-      </div>
-    </div>
-  </main>
+  <div class="video-row">
+    <div class="video-container"><span class="badge-live">LIVE</span><img src="/video1"></div>
+    <div class="video-container"><span class="badge-live">LIVE</span><img src="/video2"></div>
+  </div>
+
+  <div class="video-row">
+    <div class="video-container"><span class="badge-live">LIVE</span><img src="/video3"></div>
+    <div class="video-container"><span class="badge-live">LIVE</span><img src="/video4"></div>
+  </div>
+</div>
+
+<!-- DATA -->
+<div id="data" class="section">
+  <div class="section-title">Data Pelanggaran</div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Tanggal</th><th>Waktu</th>
+        <th>Pelanggaran</th><th>Lokasi</th><th>Confidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>351</td><td>18/12/2025</td><td>20:30</td><td>Tidak Pakai Helm</td><td>Sudirman</td><td>92%</td></tr>
+      <tr><td>352</td><td>18/12/2025</td><td>20:35</td><td>Menerobos</td><td>Ahmad Yani</td><td>89%</td></tr>
+      <tr><td>353</td><td>18/12/2025</td><td>20:40</td><td>Tidak Pakai Helm</td><td>Diponegoro</td><td>94%</td></tr>
+      <tr><td>354</td><td>18/12/2025</td><td>20:45</td><td>Overload</td><td>Gatot Subroto</td><td>90%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- STATISTIK -->
+<div id="history" class="section">
+  <div class="section-title">Statistik Pelanggaran</div>
+  <div class="chart-container">
+    <canvas id="historyChart"></canvas>
+  </div>
+</div>
+
+<!-- KEPADATAN -->
+<div id="status" class="section">
+  <div class="section-title">Status Kepadatan Lalu Lintas</div>
+  <div class="chart-container">
+    <canvas id="statusChart"></canvas>
+  </div>
+</div>
+
+</main>
 </div>
 
 <script>
-  function showSection(id){
-    document.querySelectorAll('.section').forEach(s => s.style.display='none');
-    document.getElementById(id).style.display='flex';
-  }
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
 
-  // Overlay Canvas Resize
-  function setupVideoOverlay(videoId, canvasId) {
-    const videoImg = document.getElementById(videoId);
-    const overlayCanvas = document.getElementById(canvasId);
-    const overlayCtx = overlayCanvas.getContext('2d');
+/* Statistik pelanggaran per hari (4 titik waktu contoh) */
+new Chart(historyChart,{
+  type:'line',
+  data:{
+    labels:['12','13','14','15'],
+    datasets:[{
+      data:[6,9,5,11],
+      borderColor:'#f5c542',
+      tension:.35
+    }]
+  },
+  options:{plugins:{legend:{display:false}}}
+})
 
-    function resizeCanvas() {
-      overlayCanvas.width = videoImg.clientWidth;
-      overlayCanvas.height = videoImg.clientHeight;
-    }
-
-    window.addEventListener("resize", resizeCanvas);
-    videoImg.addEventListener("load", resizeCanvas);
-
-    function drawDetections() {
-      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      requestAnimationFrame(drawDetections);
-    }
-    drawDetections();
-  }
-
-  setupVideoOverlay('videoStream1','overlayCanvas1');
-  setupVideoOverlay('videoStream2','overlayCanvas2');
-
-  // Chart History
-  const ctxHistory = document.getElementById('historyChart').getContext('2d');
-  new Chart(ctxHistory, {
-    type: 'line',
-    data: {
-      labels: ['12:00','13:00','14:00','15:00','16:00'],
-      datasets: [{ 
-        label: 'Rata-rata Pelanggaran', 
-        data: [2,3,1,4,2], 
-        backgroundColor: '#00ff00',
-        borderColor: '#ff0000',
-        borderWidth: 3, 
-        tension:0.3,
-        pointBackgroundColor: '#ffff00',
-        pointRadius:5
-      }]
-    },
-    options:{ 
-      responsive:true, 
-      plugins:{ legend:{ labels:{color:'#fff'} } }, 
-      scales:{ x:{ ticks:{ color:'#fff' } }, y:{ ticks:{ color:'#fff' } } } 
-    }
-  });
-
-  // Chart Status
-  const ctxStatus = document.getElementById('statusChart').getContext('2d');
-  new Chart(ctxStatus, {
-    type: 'bar',
-    data: {
-      labels: ['Jalan A','Jalan B','Jalan C','Jalan D'],
-      datasets: [{ 
-        label: 'Kepadatan', 
-        data: [60,80,40,70], 
-        backgroundColor: ['#00ff00','#ffff00','#3498db','#d35400'], 
-        borderRadius: 4 
-      }]
-    },
-    options:{ 
-      responsive:true, 
-      plugins:{ legend:{ labels:{color:'#fff'} } }, 
-      scales:{ x:{ ticks:{ color:'#fff' } }, y:{ ticks:{ color:'#fff' } } } 
-    }
-  });
+/* Kepadatan untuk 4 lokasi kamera */
+new Chart(statusChart,{
+  type:'bar',
+  data:{
+    labels:[
+      'Sudirman',
+      'Ahmad Yani',
+      'Diponegoro',
+      'Gatot Subroto'
+    ],
+    datasets:[{
+      data:[82,55,34,68],
+      backgroundColor:'#00e5ff'
+    }]
+  },
+  options:{plugins:{legend:{display:false}}}
+})
 </script>
 
 </body>

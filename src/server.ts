@@ -9,7 +9,9 @@ server();
 // Ambil 2 URL dari .env
 const URLS = [
   process.env.WS_URL_TARGET1,
-  process.env.WS_URL_TARGET2
+  process.env.WS_URL_TARGET2,
+  process.env.WS_URL_TARGET3,
+  process.env.WS_URL_TARGET4
 ];
 
 URLS.forEach((URL, index) => {

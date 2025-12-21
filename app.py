@@ -65,13 +65,15 @@ except FileNotFoundError:
 # ================== VIDEO URLS ==================
 video_urls = [
     "http://localhost:3000/hls/output1.m3u8",
-    "http://localhost:3000/hls/output2.m3u8"
+    "http://localhost:3000/hls/output2.m3u8",
+    "http://localhost:3000/hls/output3.m3u8",
+    "http://localhost:3000/hls/output4.m3u8"
 ]
 
 caps = [VideoCaptureAsync(url) for url in video_urls]
 
 # ================== CONFIG ==================
-small_width, small_height = 640, 360
+small_width, small_height = 426, 240
 frame_skip = 3
 count = 0
 scale_box = 0.84
@@ -111,7 +113,7 @@ class YOLOThread:
                         )
                     except Exception:
                         self.results = None
-            time.sleep(0.02)
+            time.sleep(0.001)
 
 yolo_threads = [YOLOThread() for _ in video_urls]
 
@@ -131,8 +133,13 @@ def generate_frames(index):
         if count % frame_skip != 0:
             continue
 
-        frame_small = cv2.resize(frame, (small_width, small_height))
-        yolo_thread.frame = frame_small.copy()
+        frame_small = cv2.resize(
+            frame,
+            (small_width, small_height),
+            interpolation=cv2.INTER_AREA
+        )
+        
+        yolo_thread.frame = frame_small
 
         with yolo_thread.lock:
             results = yolo_thread.results
@@ -188,7 +195,7 @@ def generate_frames(index):
                 2
             )
 
-        ret, buffer = cv2.imencode('.jpg', frame_small, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
+        ret, buffer = cv2.imencode('.jpg', frame_small, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
@@ -205,6 +212,16 @@ def video1_feed():
 @app.route('/video2')
 def video2_feed():
     return Response(generate_frames(1),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/video3')
+def video3_feed():
+    return Response(generate_frames(2),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/video4')
+def video4_feed():
+    return Response(generate_frames(3),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
